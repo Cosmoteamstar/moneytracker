@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รายรับ-รายจ่าย</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div>
+      <h1>รายรับ-รายจ่าย</h1>
+      <p class="sub">บันทึกและติดตามการเงินรายวัน</p>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn ghost" id="importBtn">นำเข้างบตั้งต้น</button>
+      <button class="btn ghost" id="exportBtn">ส่งออกข้อมูล</button>
+    </div>
+  </header>
+
+  <section class="month-nav">
+    <button class="icon-btn" id="prevMonth">‹</button>
+    <div class="month-label" id="monthLabel">กรกฎาคม 2026</div>
+    <button class="icon-btn" id="nextMonth">›</button>
+  </section>
+
+  <section class="summary-grid">
+    <div class="card summary-card">
+      <div class="label">รายรับเดือนนี้</div>
+      <div class="hero num income" id="sumIncome">฿0</div>
+    </div>
+    <div class="card summary-card">
+      <div class="label">รายจ่ายเดือนนี้</div>
+      <div class="hero num expense" id="sumExpense">฿0</div>
+    </div>
+    <div class="card summary-card">
+      <div class="label">คงเหลือ</div>
+      <div class="hero num" id="sumBalance">฿0</div>
+    </div>
+  </section>
+
+  <section class="charts-grid">
+    <div class="card">
+      <div class="label">สัดส่วนรายจ่ายตามหมวดหมู่</div>
+      <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+      <div id="categoryEmpty" class="empty-note" style="display:none;">ยังไม่มีรายจ่ายในเดือนนี้</div>
+    </div>
+    <div class="card">
+      <div class="label">แนวโน้ม 6 เดือนล่าสุด</div>
+      <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="flex-between">
+      <div class="label" style="margin-bottom:0;">รายการทั้งหมด</div>
+      <button class="btn primary" id="openAddBtn">+ เพิ่มรายการ</button>
+    </div>
+    <div id="txList" class="tx-list"></div>
+    <div id="txEmpty" class="empty-note" style="display:none;">ยังไม่มีรายการในเดือนนี้ กด "+ เพิ่มรายการ" เพื่อเริ่มบันทึก</div>
+  </section>
+</div>
+
+<!-- Add/Edit Transaction Modal -->
+<div class="modal-backdrop" id="txModalBackdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="modalTitle">เพิ่มรายการ</span>
+      <button class="icon-btn" id="closeModalBtn">✕</button>
+    </div>
+    <div class="type-toggle">
+      <button class="type-btn expense active" data-type="expense" id="typeExpenseBtn">รายจ่าย</button>
+      <button class="type-btn income" data-type="income" id="typeIncomeBtn">รายรับ</button>
+    </div>
+    <div class="form-row">
+      <label>วันที่</label>
+      <input type="date" id="txDate">
+    </div>
+    <div class="form-row">
+      <label>หมวดหมู่</label>
+      <input type="text" id="txCategory" list="categoryList" placeholder="เช่น ค่าห้อง, อาหาร">
+      <datalist id="categoryList"></datalist>
+    </div>
+    <div class="form-row">
+      <label>จำนวนเงิน</label>
+      <input type="text" inputmode="decimal" id="txAmount" placeholder="0">
+    </div>
+    <div class="form-row">
+      <label>โน้ต (ถ้ามี)</label>
+      <input type="text" id="txNote" placeholder="รายละเอียดเพิ่มเติม">
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="deleteTxBtn" style="display:none;">ลบรายการ</button>
+      <button class="btn primary" id="saveTxBtn">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-backdrop" id="importModalBackdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <span>นำเข้างบตั้งต้น</span>
+      <button class="icon-btn" id="closeImportBtn">✕</button>
+    </div>
+    <p class="modal-note">วางไฟล์ JSON ที่ export มาจากแดชบอร์ดงบประมาณ (ปุ่ม "ส่งออกข้อมูลตั้งต้น") ระบบจะสร้างรายการรายรับ-รายจ่ายของเดือนปัจจุบันให้อัตโนมัติ</p>
+    <textarea id="importTextarea" rows="6" placeholder="วางเนื้อหา JSON ที่นี่..."></textarea>
+    <div class="modal-actions">
+      <label class="btn ghost file-btn">
+        เลือกไฟล์
+        <input type="file" id="importFileInput" accept=".json" style="display:none;">
+      </label>
+      <button class="btn primary" id="confirmImportBtn">นำเข้า</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

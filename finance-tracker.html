@@ -1,0 +1,600 @@
+<style>
+  :root{
+    --bg:#F5F5F7;
+    --surface:#FFFFFF;
+    --ink:#1D1D1F;
+    --ink-soft:#6E6E73;
+    --line:#E5E5EA;
+    --blue:#0071E3;
+    --blue-soft:#E8F1FD;
+    --green:#2FA84F;
+    --green-soft:#E7F7EC;
+    --orange:#FF9500;
+    --orange-soft:#FFF3E2;
+    --red:#FF3B30;
+    --radius:18px;
+    --radius-sm:12px;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  .fin-app{
+    background:var(--bg);
+    color:var(--ink);
+    padding:28px 20px 60px;
+    min-height:100%;
+    -webkit-font-smoothing:antialiased;
+  }
+  .fin-num{
+    font-family:"SF Mono","SFMono-Regular",ui-monospace,"Roboto Mono",monospace;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:-0.01em;
+  }
+  .fin-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .fin-title{
+    font-size:26px;
+    font-weight:700;
+    letter-spacing:-0.02em;
+  }
+  .fin-sub{
+    color:var(--ink-soft);
+    font-size:13px;
+    margin-top:2px;
+  }
+  .fin-save-status{
+    font-size:12px;
+    color:var(--ink-soft);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .fin-dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--green);
+    transition:background .3s;
+  }
+  .fin-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    max-width:1040px;
+    margin:0 auto;
+  }
+  @media (max-width:760px){ .fin-grid{grid-template-columns:1fr;} }
+  .fin-card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:22px;
+    box-shadow:0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.03);
+  }
+  .fin-card-wide{ grid-column:1 / -1; }
+  .fin-label{
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    margin-bottom:10px;
+  }
+  .fin-hero-num{
+    font-size:34px;
+    font-weight:700;
+    line-height:1.1;
+  }
+  .fin-hero-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+  }
+  .fin-editable{
+    background:transparent;
+    border:none;
+    outline:none;
+    font-size:inherit;
+    font-weight:inherit;
+    color:inherit;
+    font-family:inherit;
+    width:100%;
+    border-bottom:1px solid transparent;
+    padding:2px 0;
+    transition:border-color .15s;
+  }
+  .fin-editable:focus{ border-bottom-color:var(--blue); }
+  .fin-input-small{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:6px 9px;
+    font-size:13px;
+    font-family:inherit;
+    color:var(--ink);
+    outline:none;
+    width:100%;
+  }
+  .fin-input-small:focus{ border-color:var(--blue); }
+  .fin-pill{
+    font-size:11px;
+    font-weight:600;
+    padding:3px 9px;
+    border-radius:20px;
+    background:var(--blue-soft);
+    color:var(--blue);
+  }
+  .fin-flex-between{ display:flex; justify-content:space-between; align-items:center; }
+  .fin-mt{ margin-top:14px; }
+  .fin-ring-wrap{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+  .fin-ring-info{ flex:1; min-width:150px; }
+  .fin-ring-goal-row{ display:flex; gap:8px; align-items:center; margin-top:10px; font-size:13px; color:var(--ink-soft); }
+  .fin-table{ width:100%; border-collapse:collapse; font-size:14px; }
+  .fin-table th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--ink-soft);
+    font-weight:600;
+    padding:6px 8px;
+    border-bottom:1px solid var(--line);
+  }
+  .fin-table td{
+    padding:7px 8px;
+    border-bottom:1px solid var(--line);
+    vertical-align:middle;
+  }
+  .fin-table tr:last-child td{ border-bottom:none; }
+  .fin-type-badge{
+    font-size:11px;
+    font-weight:600;
+    padding:3px 8px;
+    border-radius:8px;
+    cursor:pointer;
+    border:none;
+    outline:none;
+  }
+  .fin-type-fixed{ background:var(--blue-soft); color:var(--blue); }
+  .fin-type-variable{ background:var(--orange-soft); color:var(--orange); }
+  .fin-del-btn{
+    background:none; border:none; cursor:pointer;
+    color:var(--ink-soft); font-size:16px; line-height:1;
+    padding:4px 6px; border-radius:6px;
+  }
+  .fin-del-btn:hover{ background:#FBEAEA; color:var(--red); }
+  .fin-add-row{
+    display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;
+  }
+  .fin-add-row input{ flex:1; min-width:100px; }
+  .fin-btn{
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    border-radius:9px;
+    padding:8px 16px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .fin-btn:hover{ opacity:0.85; }
+  .fin-btn-ghost{
+    background:var(--bg);
+    color:var(--ink);
+    border:1px solid var(--line);
+  }
+  .fin-bar-bg{
+    width:100%; height:8px; border-radius:6px; background:var(--bg); overflow:hidden; margin-top:8px;
+  }
+  .fin-bar-fill{
+    height:100%; border-radius:6px; background:var(--blue); transition:width .4s ease;
+  }
+  .fin-summary-list{ display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+  .fin-summary-item{ display:flex; justify-content:space-between; font-size:14px; }
+  .fin-summary-item .lbl{ color:var(--ink-soft); }
+  .fin-divider{ height:1px; background:var(--line); margin:12px 0; }
+  .fin-sink-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 0; border-bottom:1px solid var(--line); gap:10px; flex-wrap:wrap;
+  }
+  .fin-sink-row:last-of-type{ border-bottom:none; }
+  .fin-sink-name{ font-weight:600; font-size:14px; flex:1; min-width:120px; }
+  .fin-sink-meta{ font-size:12px; color:var(--ink-soft); }
+  .fin-badge-warn{
+    font-size:11px; background:var(--orange-soft); color:var(--orange);
+    padding:2px 8px; border-radius:8px; font-weight:600;
+  }
+  .fin-note{
+    font-size:12px; color:var(--ink-soft); margin-top:10px; line-height:1.5;
+  }
+</style>
+
+<div class="fin-app" id="finApp">
+  <div class="fin-header">
+    <div>
+      <div class="fin-title">การเงินของฉัน</div>
+      <div class="fin-sub" id="finSubtitle">แผนงบประมาณและเงินเก็บรายเดือน</div>
+    </div>
+    <div class="fin-save-status"><span class="fin-dot" id="finSaveDot"></span><span id="finSaveText">บันทึกแล้ว</span></div>
+  </div>
+
+  <div class="fin-grid">
+
+    <!-- Income & Leftover -->
+    <div class="fin-card">
+      <div class="fin-label">เงินเดือน</div>
+      <div class="fin-hero-row">
+        <div class="fin-hero-num fin-num">฿<input class="fin-editable" id="incomeInput" inputmode="decimal" style="width:auto;display:inline-block;font-size:34px;"></div>
+      </div>
+      <div class="fin-note">แก้ไขตัวเลขได้โดยตรง จะคำนวณส่วนที่เหลือให้อัตโนมัติ</div>
+    </div>
+
+    <div class="fin-card">
+      <div class="fin-label">เหลือใช้ต่อวัน (ค่ากิน/จิปาถะ)</div>
+      <div class="fin-hero-num fin-num" id="dailyLeftover">฿0</div>
+      <div class="fin-note" id="monthlyLeftoverNote">ต่อเดือน: ฿0</div>
+    </div>
+
+    <!-- Emergency fund ring -->
+    <div class="fin-card">
+      <div class="fin-label">กองทุนฉุกเฉิน</div>
+      <div class="fin-ring-wrap">
+        <svg width="108" height="108" viewBox="0 0 108 108" style="flex-shrink:0;">
+          <circle cx="54" cy="54" r="46" fill="none" stroke="var(--bg)" stroke-width="12"/>
+          <circle id="emRingFill" cx="54" cy="54" r="46" fill="none" stroke="var(--blue)" stroke-width="12"
+            stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="289"
+            transform="rotate(-90 54 54)" style="transition:stroke-dashoffset .5s ease;"/>
+          <text id="emRingPct" x="54" y="59" text-anchor="middle" font-size="20" font-weight="700" fill="var(--ink)" font-family="SF Mono, monospace">0%</text>
+        </svg>
+        <div class="fin-ring-info">
+          <div style="font-size:13px;color:var(--ink-soft);">สะสมแล้ว</div>
+          <div class="fin-num" style="font-weight:700;font-size:16px;">฿<input class="fin-editable" id="emSavedInput" inputmode="decimal" style="width:90px;display:inline-block;font-size:16px;font-weight:700;"></div>
+          <div class="fin-ring-goal-row">
+            เป้าหมาย ฿<input class="fin-input-small" id="emGoalInput" inputmode="decimal" style="width:80px;">
+            <button class="fin-btn-ghost fin-btn" id="emSuggestBtn" style="padding:4px 8px;font-size:11px;">ใช้ค่าแนะนำ</button>
+          </div>
+        </div>
+      </div>
+      <div class="fin-note" id="emEta">—</div>
+    </div>
+
+    <!-- Sinking fund -->
+    <div class="fin-card">
+      <div class="fin-flex-between">
+        <div class="fin-label" style="margin-bottom:0;">สำรองรายจ่ายบ้าน (รายปี/ไม่ประจำ)</div>
+        <span class="fin-pill" id="sinkMonthlyPill">฿0/ด.</span>
+      </div>
+      <div id="sinkList" class="fin-mt"></div>
+      <div class="fin-add-row">
+        <input class="fin-input-small" id="sinkNameInput" placeholder="ชื่อรายการ เช่น ประกันย่า">
+        <input class="fin-input-small" id="sinkAmountInput" placeholder="จำนวน/ปี" inputmode="decimal" style="max-width:110px;">
+        <button class="fin-btn" id="sinkAddBtn">+ เพิ่ม</button>
+      </div>
+      <div class="fin-note">ยอดต่อปีจะถูกหารเป็นรายเดือนให้อัตโนมัติ เพื่อกันเงินไว้ล่วงหน้าไม่ให้กระทบกองฉุกเฉิน</div>
+    </div>
+
+    <!-- Expense table -->
+    <div class="fin-card fin-card-wide">
+      <div class="fin-flex-between">
+        <div class="fin-label" style="margin-bottom:0;">รายจ่ายประจำเดือน</div>
+        <span class="fin-pill" id="expTotalPill">฿0</span>
+      </div>
+      <table class="fin-table fin-mt">
+        <thead><tr><th style="width:40%;">รายการ</th><th>จำนวน</th><th>ประเภท</th><th></th></tr></thead>
+        <tbody id="expTableBody"></tbody>
+      </table>
+      <div class="fin-add-row">
+        <input class="fin-input-small" id="expNameInput" placeholder="ชื่อรายการ">
+        <input class="fin-input-small" id="expAmountInput" placeholder="จำนวน" inputmode="decimal" style="max-width:110px;">
+        <button class="fin-btn" id="expAddBtn">+ เพิ่ม</button>
+      </div>
+    </div>
+
+    <!-- Link to standalone tracker -->
+    <div class="fin-card fin-card-wide">
+      <div class="fin-flex-between" style="flex-wrap:wrap;gap:10px;">
+        <div>
+          <div class="fin-label" style="margin-bottom:2px;">เว็บติดตามรายรับ-รายจ่าย (แยกต่างหาก)</div>
+          <div class="fin-note" style="margin-top:0;">วางลิงก์ Vercel ของเว็บ tracker หลังจาก deploy แล้ว จะกดเปิดจากหน้านี้ได้เลย</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="fin-btn fin-btn-ghost" id="exportBudgetBtn">ส่งออกข้อมูลตั้งต้น (.json)</button>
+          <button class="fin-btn" id="openTrackerBtn">เปิดตัวติดตามรายรับ-รายจ่าย</button>
+        </div>
+      </div>
+      <div class="fin-add-row">
+        <input class="fin-input-small" id="trackerUrlInput" placeholder="https://your-app.vercel.app">
+      </div>
+    </div>
+
+    <!-- Summary breakdown -->
+    <div class="fin-card fin-card-wide">
+      <div class="fin-label">สรุปการจัดสรรเงินเดือน</div>
+      <div class="fin-summary-list" id="summaryList"></div>
+      <div class="fin-bar-bg" style="display:flex;overflow:hidden;height:10px;">
+        <div id="barFixed" style="height:100%;background:var(--blue);"></div>
+        <div id="barVariable" style="height:100%;background:var(--orange);"></div>
+        <div id="barSaving" style="height:100%;background:var(--green);"></div>
+        <div id="barFood" style="height:100%;background:var(--line);"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  const DEFAULT_STATE = {
+    income: 25800,
+    expenses: [
+      {id:'e1', name:'ค่าห้อง', amount:3900, type:'fixed'},
+      {id:'e2', name:'ค่าน้ำ', amount:100, type:'fixed'},
+      {id:'e3', name:'ค่าไฟ', amount:400, type:'fixed'},
+      {id:'e4', name:'เน็ตบ้าน', amount:330, type:'fixed'},
+      {id:'e5', name:'เน็ตโทรศัพท์', amount:430, type:'fixed'},
+      {id:'e6', name:'ให้ย่า', amount:3000, type:'fixed'},
+      {id:'e7', name:'BTS', amount:1200, type:'fixed'},
+      {id:'e8', name:'รถตู้', amount:440, type:'fixed'},
+      {id:'e9', name:'ประกันสังคม', amount:875, type:'fixed'},
+      {id:'e10', name:'Shopping', amount:2000, type:'variable'},
+      {id:'e11', name:'น้ำยาซักผ้า', amount:600, type:'variable'}
+    ],
+    monthlySaving: 5000,
+    emergency: { saved: 0, goal: 0 },
+    sinking: [
+      {id:'s1', name:'ค่าประกันย่ารายปี', amount:0},
+      {id:'s2', name:'ซ่อม/เปลี่ยนเครื่องใช้ไฟฟ้า', amount:0}
+    ]
+  };
+
+  let state = null;
+  let saveTimer = null;
+
+  function uid(prefix){ return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+  function fmt(n){ n = Math.round(Number(n)||0); return n.toLocaleString('en-US'); }
+  function clampNum(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+
+  async function loadState(){
+    try{
+      const res = await window.storage.get('finance-profile', false);
+      if(res && res.value){
+        const parsed = JSON.parse(res.value);
+        state = Object.assign({}, DEFAULT_STATE, parsed);
+      } else {
+        state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      }
+    }catch(e){
+      state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    }
+    render();
+  }
+
+  function scheduleSave(){
+    const dot = document.getElementById('finSaveDot');
+    const text = document.getElementById('finSaveText');
+    dot.style.background = 'var(--orange)';
+    text.textContent = 'กำลังบันทึก...';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async ()=>{
+      try{
+        await window.storage.set('finance-profile', JSON.stringify(state), false);
+        dot.style.background = 'var(--green)';
+        text.textContent = 'บันทึกแล้ว';
+      }catch(e){
+        dot.style.background = 'var(--red)';
+        text.textContent = 'บันทึกไม่สำเร็จ';
+      }
+    }, 500);
+  }
+
+  function totals(){
+    let fixed=0, variable=0;
+    state.expenses.forEach(e=>{ if(e.type==='fixed') fixed+=Number(e.amount)||0; else variable+=Number(e.amount)||0; });
+    const sinkMonthly = state.sinking.reduce((s,x)=>s+((Number(x.amount)||0)/12),0);
+    const saving = Number(state.monthlySaving)||0;
+    const income = Number(state.income)||0;
+    const leftover = income - fixed - variable - saving - sinkMonthly;
+    return {fixed, variable, sinkMonthly, saving, income, leftover};
+  }
+
+  function suggestedEmergencyGoal(t){
+    const foodEstimate = Math.max(t.leftover, 4000);
+    return Math.round((t.fixed + foodEstimate) * 6 / 1000) * 1000;
+  }
+
+  function render(){
+    const t = totals();
+
+    document.getElementById('incomeInput').value = fmt(state.income);
+    document.getElementById('trackerUrlInput').value = state.trackerUrl || '';
+    document.getElementById('dailyLeftover').textContent = '฿' + fmt(t.leftover/30);
+    document.getElementById('monthlyLeftoverNote').textContent = 'ต่อเดือน: ฿' + fmt(t.leftover);
+
+    // expense table
+    const body = document.getElementById('expTableBody');
+    body.innerHTML = '';
+    state.expenses.forEach(e=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input class="fin-editable" data-id="${e.id}" data-field="name" value="${e.name}"></td>
+        <td class="fin-num"><input class="fin-editable" data-id="${e.id}" data-field="amount" value="${fmt(e.amount)}" inputmode="decimal"></td>
+        <td><button class="fin-type-badge ${e.type==='fixed'?'fin-type-fixed':'fin-type-variable'}" data-id="${e.id}" data-action="toggletype">${e.type==='fixed'?'คงที่':'ผันแปร'}</button></td>
+        <td><button class="fin-del-btn" data-id="${e.id}" data-action="delexp">✕</button></td>
+      `;
+      body.appendChild(tr);
+    });
+    document.getElementById('expTotalPill').textContent = '฿' + fmt(t.fixed + t.variable);
+
+    // sinking fund
+    const sinkList = document.getElementById('sinkList');
+    sinkList.innerHTML = '';
+    state.sinking.forEach(s=>{
+      const row = document.createElement('div');
+      row.className = 'fin-sink-row';
+      const monthlyNeed = (Number(s.amount)||0)/12;
+      row.innerHTML = `
+        <div class="fin-sink-name"><input class="fin-editable" data-id="${s.id}" data-field="sname" value="${s.name}"></div>
+        <div class="fin-sink-meta">฿<input class="fin-input-small" data-id="${s.id}" data-field="samount" value="${fmt(s.amount)}" inputmode="decimal" style="width:80px;display:inline-block;">/ปี</div>
+        <span class="fin-badge-warn">~฿${fmt(monthlyNeed)}/ด.</span>
+        <button class="fin-del-btn" data-id="${s.id}" data-action="delsink">✕</button>
+      `;
+      sinkList.appendChild(row);
+    });
+    document.getElementById('sinkMonthlyPill').textContent = '฿' + fmt(t.sinkMonthly) + '/ด.';
+
+    // emergency ring
+    if(!state.emergency.goal || state.emergency.goal === 0){
+      state.emergency.goal = suggestedEmergencyGoal(t);
+    }
+    document.getElementById('emSavedInput').value = fmt(state.emergency.saved);
+    document.getElementById('emGoalInput').value = fmt(state.emergency.goal);
+    const pct = state.emergency.goal > 0 ? Math.min(100, (state.emergency.saved/state.emergency.goal)*100) : 0;
+    const circumference = 289;
+    const offset = circumference - (circumference * pct/100);
+    document.getElementById('emRingFill').style.strokeDashoffset = offset;
+    document.getElementById('emRingPct').textContent = Math.round(pct) + '%';
+
+    const monthlyToEmergency = Math.max(0, t.saving - t.sinkMonthly);
+    const remaining = Math.max(0, state.emergency.goal - state.emergency.saved);
+    const etaEl = document.getElementById('emEta');
+    if(monthlyToEmergency > 0 && remaining > 0){
+      const months = Math.ceil(remaining / monthlyToEmergency);
+      etaEl.textContent = `เก็บเดือนละ ~฿${fmt(monthlyToEmergency)} จะครบเป้าใน ${months} เดือน`;
+    } else if(remaining <= 0){
+      etaEl.textContent = 'ถึงเป้าหมายแล้ว 🎉';
+    } else {
+      etaEl.textContent = 'เงินสำรองบ้านใช้เงินเก็บทั้งหมดพอดี ลองเพิ่มเงินเก็บต่อเดือน';
+    }
+
+    // summary
+    const summary = document.getElementById('summaryList');
+    summary.innerHTML = `
+      <div class="fin-summary-item"><span class="lbl">รายจ่ายคงที่</span><span class="fin-num">฿${fmt(t.fixed)}</span></div>
+      <div class="fin-summary-item"><span class="lbl">รายจ่ายผันแปร</span><span class="fin-num">฿${fmt(t.variable)}</span></div>
+      <div class="fin-summary-item"><span class="lbl">เงินเก็บ (รวมสำรองบ้าน)</span><span class="fin-num">฿${fmt(t.saving)}</span></div>
+      <div class="fin-summary-item"><span class="lbl">เหลือค่ากิน/จิปาถะ</span><span class="fin-num">฿${fmt(t.leftover)}</span></div>
+      <div class="fin-divider"></div>
+      <div class="fin-summary-item" style="font-weight:700;"><span>รวม</span><span class="fin-num">฿${fmt(t.fixed+t.variable+t.saving+t.leftover)}</span></div>
+    `;
+    const total = Math.max(1, t.income);
+    document.getElementById('barFixed').style.width = (t.fixed/total*100) + '%';
+    document.getElementById('barVariable').style.width = (t.variable/total*100) + '%';
+    document.getElementById('barSaving').style.width = (t.saving/total*100) + '%';
+    document.getElementById('barFood').style.width = (Math.max(0,t.leftover)/total*100) + '%';
+  }
+
+  function attachEvents(){
+    document.getElementById('incomeInput').addEventListener('change', e=>{
+      state.income = clampNum(e.target.value.replace(/,/g,''));
+      render(); scheduleSave();
+    });
+
+    document.getElementById('emSavedInput').addEventListener('change', e=>{
+      state.emergency.saved = clampNum(e.target.value.replace(/,/g,''));
+      render(); scheduleSave();
+    });
+    document.getElementById('emGoalInput').addEventListener('change', e=>{
+      state.emergency.goal = clampNum(e.target.value.replace(/,/g,''));
+      render(); scheduleSave();
+    });
+    document.getElementById('emSuggestBtn').addEventListener('click', ()=>{
+      const t = totals();
+      state.emergency.goal = suggestedEmergencyGoal(t);
+      render(); scheduleSave();
+    });
+
+    document.getElementById('expAddBtn').addEventListener('click', ()=>{
+      const name = document.getElementById('expNameInput').value.trim();
+      const amount = clampNum(document.getElementById('expAmountInput').value);
+      if(!name) return;
+      state.expenses.push({id:uid('e'), name, amount, type:'variable'});
+      document.getElementById('expNameInput').value='';
+      document.getElementById('expAmountInput').value='';
+      render(); scheduleSave();
+    });
+
+    document.getElementById('sinkAddBtn').addEventListener('click', ()=>{
+      const name = document.getElementById('sinkNameInput').value.trim();
+      const amount = clampNum(document.getElementById('sinkAmountInput').value);
+      if(!name) return;
+      state.sinking.push({id:uid('s'), name, amount});
+      document.getElementById('sinkNameInput').value='';
+      document.getElementById('sinkAmountInput').value='';
+      render(); scheduleSave();
+    });
+
+    document.getElementById('finApp').addEventListener('click', e=>{
+      const action = e.target.getAttribute('data-action');
+      const id = e.target.getAttribute('data-id');
+      if(action === 'delexp'){
+        state.expenses = state.expenses.filter(x=>x.id!==id);
+        render(); scheduleSave();
+      } else if(action === 'delsink'){
+        state.sinking = state.sinking.filter(x=>x.id!==id);
+        render(); scheduleSave();
+      } else if(action === 'toggletype'){
+        const exp = state.expenses.find(x=>x.id===id);
+        if(exp){ exp.type = exp.type==='fixed' ? 'variable' : 'fixed'; render(); scheduleSave(); }
+      }
+    });
+
+    document.getElementById('finApp').addEventListener('change', e=>{
+      const field = e.target.getAttribute('data-field');
+      const id = e.target.getAttribute('data-id');
+      if(!field || !id) return;
+      if(field === 'name'){
+        const exp = state.expenses.find(x=>x.id===id);
+        if(exp){ exp.name = e.target.value; scheduleSave(); }
+      } else if(field === 'amount'){
+        const exp = state.expenses.find(x=>x.id===id);
+        if(exp){ exp.amount = clampNum(e.target.value.replace(/,/g,'')); render(); scheduleSave(); }
+      } else if(field === 'sname'){
+        const s = state.sinking.find(x=>x.id===id);
+        if(s){ s.name = e.target.value; scheduleSave(); }
+      } else if(field === 'samount'){
+        const s = state.sinking.find(x=>x.id===id);
+        if(s){ s.amount = clampNum(e.target.value.replace(/,/g,'')); render(); scheduleSave(); }
+      }
+    });
+  }
+
+  function attachTrackerLinkEvents(){
+    const urlInput = document.getElementById('trackerUrlInput');
+    urlInput.addEventListener('change', ()=>{
+      state.trackerUrl = urlInput.value.trim();
+      scheduleSave();
+    });
+    document.getElementById('openTrackerBtn').addEventListener('click', ()=>{
+      const url = (state.trackerUrl || '').trim();
+      if(!url){ alert('กรุณาวางลิงก์เว็บ tracker ก่อน (หลัง deploy ขึ้น Vercel แล้ว)'); return; }
+      window.open(url, '_blank');
+    });
+    document.getElementById('exportBudgetBtn').addEventListener('click', ()=>{
+      const payload = {
+        income: state.income,
+        expenses: state.expenses.map(e=>({name:e.name, amount:e.amount, type:e.type})),
+        monthlySaving: state.monthlySaving,
+        emergency: state.emergency,
+        sinking: state.sinking
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'budget-export.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  attachEvents();
+  attachTrackerLinkEvents();
+  loadState();
+})();
+</script>
