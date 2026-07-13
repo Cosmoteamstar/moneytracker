@@ -29,6 +29,28 @@ Vercel จะตรวจพบว่าเป็น static site อัตโน
 ### วิธีที่ 3: Drag & Drop
 ลาก folder `finance-tracker-app` เข้าไปที่หน้า https://vercel.com/new โดยตรง
 
+## เชื่อมต่อกับ Google Sheets (ฟรี ไม่ต้องมี database)
+
+โฟลเดอร์ `google-apps-script/Code.gs` คือ backend ฟรีที่ทำให้ Google Sheet ทำหน้าที่เป็นฐานข้อมูลของแอปนี้ วิธีตั้งค่า:
+
+1. สร้าง Google Sheet ใหม่ที่ https://sheets.google.com
+2. เมนู **Extensions > Apps Script**
+3. ลบโค้ดตั้งต้นทั้งหมด แล้ววางเนื้อหาจาก `google-apps-script/Code.gs` ลงไปแทน
+4. กด **Deploy > New deployment**
+   - Select type: **Web app**
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+5. กด Deploy แล้วอนุญาตสิทธิ์ที่ Google ถามไป
+6. คัดลอก **Web app URL** ที่ได้ (จะลงท้ายด้วย `/exec`)
+7. เปิดเว็บ tracker → กดปุ่ม **"ตั้งค่า Google Sheets"** ที่หัวเว็บ → วาง URL → กด **"ทดสอบและเชื่อมต่อ"**
+
+หลังจากเชื่อมต่อสำเร็จ ทุกรายการที่เพิ่ม/แก้ไข/ลบในเว็บจะไปอัปเดตที่ Google Sheet โดยตรง และคุณสามารถเปิด Sheet มาพิมพ์แถวข้อมูลเพิ่มเองได้เลย (แอปจะดึงข้อมูลล่าสุดมาแสดงทุกครั้งที่เปิดหรือเชื่อมต่อใหม่)
+
+**ข้อควรรู้:**
+- ทุกครั้งที่แก้โค้ดใน Apps Script ต้องสร้าง deployment เวอร์ชันใหม่ (Deploy > Manage deployments > แก้ไข > New version) ไม่งั้น URL เดิมจะยังใช้โค้ดเก่าอยู่
+- "Who has access: Anyone" หมายถึงใครก็เรียก URL นี้ได้ถ้ารู้ลิงก์ (ไม่ได้แปลว่า public บน Google) ควรเก็บลิงก์นี้เป็นความลับเหมือนรหัสผ่าน
+- ถ้าไม่เชื่อมต่อ Google Sheets เว็บจะยังทำงานได้ปกติโดยเก็บข้อมูลใน `localStorage` ของเบราว์เซอร์แทน
+
 ## หมายเหตุเรื่องข้อมูล
 เนื่องจากข้อมูลเก็บใน `localStorage` ของเบราว์เซอร์:
 - ข้อมูลจะอยู่เฉพาะในเบราว์เซอร์/อุปกรณ์ที่ใช้บันทึก ไม่ sync ข้ามอุปกรณ์

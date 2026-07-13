@@ -2,6 +2,7 @@
   'use strict';
 
   const STORAGE_KEY = 'ft_transactions_v1';
+  const SHEETS_URL_KEY = 'ft_sheets_url';
   const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
   const EXPENSE_CATEGORIES = ['ค่าห้อง','ค่าน้ำ','ค่าไฟ','เน็ตบ้าน','เน็ตโทรศัพท์','ให้ย่า','BTS','รถตู้','ประกันสังคม','Shopping','น้ำยาซักผ้า','อาหาร','อื่นๆ'];
   const INCOME_CATEGORIES = ['เงินเดือน','รายได้เสริม','โบนัส','อื่นๆ'];
@@ -13,10 +14,35 @@
   let currentType = 'expense';
   let categoryChart = null;
   let trendChart = null;
+  let sheetsUrl = '';
 
   function uid(){ return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
   function fmt(n){ n = Math.round(Number(n)||0); return n.toLocaleString('en-US'); }
   function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+  function isSheetsConnected(){ return !!sheetsUrl; }
+
+  async function sheetsRequest(action, params){
+    const url = new URL(sheetsUrl);
+    url.searchParams.set('action', action);
+    Object.keys(params||{}).forEach(k=>{
+      if(params[k] !== undefined && params[k] !== null) url.searchParams.set(k, params[k]);
+    });
+    const res = await fetch(url.toString());
+    if(!res.ok) throw new Error('network_error');
+    return res.json();
+  }
+
+  function updateSheetsStatusUI(message){
+    const card = document.getElementById('sheetsStatusCard');
+    const text = document.getElementById('sheetsStatusText');
+    card.style.display = 'block';
+    if(isSheetsConnected()){
+      text.textContent = message || 'เชื่อมต่อ Google Sheets แล้ว ข้อมูลจะบันทึกลง Sheet โดยตรง';
+    } else {
+      text.textContent = 'ยังไม่ได้เชื่อมต่อ — ข้อมูลจะถูกเก็บในเบราว์เซอร์นี้เท่านั้น (localStorage)';
+    }
+  }
 
   function loadTransactions(){
     try{
@@ -26,6 +52,19 @@
   }
   function saveTransactions(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions)); }catch(e){}
+  }
+
+  async function refreshFromSheetsIfConnected(){
+    if(!isSheetsConnected()) return;
+    try{
+      const data = await sheetsRequest('list');
+      if(data && data.ok && Array.isArray(data.transactions)){
+        transactions = data.transactions;
+        saveTransactions();
+      }
+    }catch(e){
+      updateSheetsStatusUI('เชื่อมต่อ Google Sheets ไม่สำเร็จ ใช้ข้อมูลที่บันทึกไว้ในเบราว์เซอร์แทน');
+    }
   }
 
   function monthTransactions(){
@@ -226,30 +265,55 @@
     populateCategoryList();
   }
 
-  function saveTx(){
+  async function saveTx(){
     const date = document.getElementById('txDate').value || todayISO();
     const category = document.getElementById('txCategory').value.trim() || 'อื่นๆ';
     const amount = parseFloat(document.getElementById('txAmount').value.replace(/,/g,'')) || 0;
     const note = document.getElementById('txNote').value.trim();
     if(amount <= 0){ alert('กรุณาใส่จำนวนเงินให้ถูกต้อง'); return; }
 
-    if(editingId){
-      const t = transactions.find(x=>x.id===editingId);
-      if(t){ t.date=date; t.category=category; t.amount=amount; t.note=note; t.type=currentType; }
-    } else {
-      transactions.push({ id: uid(), type: currentType, date, category, amount, note });
+    const saveBtn = document.getElementById('saveTxBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'กำลังบันทึก...';
+
+    try{
+      if(editingId){
+        const t = transactions.find(x=>x.id===editingId);
+        if(t){ t.date=date; t.category=category; t.amount=amount; t.note=note; t.type=currentType; }
+        if(isSheetsConnected()){
+          await sheetsRequest('update', {id: editingId, type: currentType, date, category, amount, note});
+        }
+      } else {
+        const newTx = { id: uid(), type: currentType, date, category, amount, note };
+        transactions.push(newTx);
+        if(isSheetsConnected()){
+          await sheetsRequest('add', newTx);
+        }
+      }
+      saveTransactions();
+      closeModal();
+      renderAll();
+    }catch(e){
+      alert('บันทึกไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ Google Sheets');
+    }finally{
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'บันทึก';
     }
-    saveTransactions();
-    closeModal();
-    renderAll();
   }
 
-  function deleteTx(){
+  async function deleteTx(){
     if(!editingId) return;
-    transactions = transactions.filter(t=>t.id!==editingId);
-    saveTransactions();
-    closeModal();
-    renderAll();
+    try{
+      if(isSheetsConnected()){
+        await sheetsRequest('delete', {id: editingId});
+      }
+      transactions = transactions.filter(t=>t.id!==editingId);
+      saveTransactions();
+      closeModal();
+      renderAll();
+    }catch(e){
+      alert('ลบไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ Google Sheets');
+    }
   }
 
   // Import / Export
@@ -265,36 +329,30 @@
     URL.revokeObjectURL(url);
   }
 
-  function tryImportBudgetJSON(jsonStr){
+  async function tryImportBudgetJSON(jsonStr){
     let data;
     try{ data = JSON.parse(jsonStr); }
     catch(e){ alert('ไฟล์ JSON ไม่ถูกต้อง'); return; }
 
     const monthPrefix = new Date(currentYear, currentMonth, 1).toISOString().slice(0,7);
     const dateStr = monthPrefix + '-01';
-    let added = 0;
+    const newRows = [];
 
-    // Case 1: budget dashboard export shape {income, expenses:[{name,amount,type}], ...}
     if(data && Array.isArray(data.expenses)){
       if(data.income){
-        transactions.push({ id: uid(), type:'income', date: dateStr, category:'เงินเดือน', amount: Number(data.income)||0, note:'นำเข้าจากงบตั้งต้น' });
-        added++;
+        newRows.push({ id: uid(), type:'income', date: dateStr, category:'เงินเดือน', amount: Number(data.income)||0, note:'นำเข้าจากงบตั้งต้น' });
       }
       data.expenses.forEach(e=>{
-        transactions.push({ id: uid(), type:'expense', date: dateStr, category: e.name || 'อื่นๆ', amount: Number(e.amount)||0, note:'นำเข้าจากงบตั้งต้น' });
-        added++;
+        newRows.push({ id: uid(), type:'expense', date: dateStr, category: e.name || 'อื่นๆ', amount: Number(e.amount)||0, note:'นำเข้าจากงบตั้งต้น' });
       });
       if(data.monthlySaving){
-        transactions.push({ id: uid(), type:'expense', date: dateStr, category:'เงินเก็บ', amount: Number(data.monthlySaving)||0, note:'นำเข้าจากงบตั้งต้น' });
-        added++;
+        newRows.push({ id: uid(), type:'expense', date: dateStr, category:'เงินเก็บ', amount: Number(data.monthlySaving)||0, note:'นำเข้าจากงบตั้งต้น' });
       }
     }
-    // Case 2: already a plain transactions array export
     else if(Array.isArray(data)){
       data.forEach(t=>{
         if(t && t.type && t.amount){
-          transactions.push({ id: uid(), type: t.type, date: t.date || dateStr, category: t.category || 'อื่นๆ', amount: Number(t.amount)||0, note: t.note || 'นำเข้า' });
-          added++;
+          newRows.push({ id: uid(), type: t.type, date: t.date || dateStr, category: t.category || 'อื่นๆ', amount: Number(t.amount)||0, note: t.note || 'นำเข้า' });
         }
       });
     } else {
@@ -302,10 +360,26 @@
       return;
     }
 
-    saveTransactions();
-    renderAll();
-    closeImportModal();
-    alert('นำเข้าเรียบร้อย เพิ่ม ' + added + ' รายการ');
+    const confirmBtn = document.getElementById('confirmImportBtn');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'กำลังนำเข้า...';
+    try{
+      transactions.push(...newRows);
+      if(isSheetsConnected()){
+        for(const row of newRows){
+          await sheetsRequest('add', row);
+        }
+      }
+      saveTransactions();
+      renderAll();
+      closeImportModal();
+      alert('นำเข้าเรียบร้อย เพิ่ม ' + newRows.length + ' รายการ');
+    }catch(e){
+      alert('นำเข้าไม่สำเร็จบางส่วน กรุณาตรวจสอบการเชื่อมต่อ Google Sheets แล้วลองใหม่');
+    }finally{
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'นำเข้า';
+    }
   }
 
   function openImportModal(){
@@ -351,6 +425,57 @@
     reader.readAsText(file);
   });
 
-  loadTransactions();
-  renderAll();
+  document.getElementById('sheetsSettingsBtn').addEventListener('click', ()=>{
+    document.getElementById('sheetsUrlInput').value = sheetsUrl;
+    document.getElementById('sheetsModalBackdrop').classList.add('open');
+  });
+  document.getElementById('closeSheetsModalBtn').addEventListener('click', ()=>{
+    document.getElementById('sheetsModalBackdrop').classList.remove('open');
+  });
+  document.getElementById('sheetsModalBackdrop').addEventListener('click', (e)=>{
+    if(e.target.id==='sheetsModalBackdrop') document.getElementById('sheetsModalBackdrop').classList.remove('open');
+  });
+  document.getElementById('connectSheetsBtn').addEventListener('click', async ()=>{
+    const url = document.getElementById('sheetsUrlInput').value.trim();
+    if(!url){ alert('กรุณาวาง Web app URL ก่อน'); return; }
+    const btn = document.getElementById('connectSheetsBtn');
+    btn.disabled = true;
+    btn.textContent = 'กำลังทดสอบ...';
+    const previousUrl = sheetsUrl;
+    sheetsUrl = url;
+    try{
+      const res = await sheetsRequest('ping');
+      if(res && res.ok){
+        localStorage.setItem(SHEETS_URL_KEY, url);
+        await refreshFromSheetsIfConnected();
+        updateSheetsStatusUI('เชื่อมต่อ Google Sheets สำเร็จ');
+        document.getElementById('sheetsModalBackdrop').classList.remove('open');
+        renderAll();
+      } else {
+        throw new Error('bad_response');
+      }
+    }catch(e){
+      sheetsUrl = previousUrl;
+      alert('เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบ URL และการตั้งค่า deploy (Who has access: Anyone)');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'ทดสอบและเชื่อมต่อ';
+    }
+  });
+  document.getElementById('disconnectSheetsBtn').addEventListener('click', ()=>{
+    sheetsUrl = '';
+    localStorage.removeItem(SHEETS_URL_KEY);
+    updateSheetsStatusUI();
+    document.getElementById('sheetsModalBackdrop').classList.remove('open');
+  });
+
+  async function init(){
+    sheetsUrl = localStorage.getItem(SHEETS_URL_KEY) || '';
+    loadTransactions();
+    updateSheetsStatusUI();
+    await refreshFromSheetsIfConnected();
+    renderAll();
+  }
+
+  init();
 })();

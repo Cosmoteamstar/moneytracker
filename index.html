@@ -15,10 +15,20 @@
       <p class="sub">บันทึกและติดตามการเงินรายวัน</p>
     </div>
     <div class="topbar-actions">
+      <button class="btn ghost" id="sheetsSettingsBtn">ตั้งค่า Google Sheets</button>
       <button class="btn ghost" id="importBtn">นำเข้างบตั้งต้น</button>
       <button class="btn ghost" id="exportBtn">ส่งออกข้อมูล</button>
     </div>
   </header>
+
+  <div class="card" id="sheetsStatusCard" style="display:none;">
+    <div class="flex-between">
+      <div>
+        <div class="label" style="margin-bottom:2px;">Google Sheets</div>
+        <div class="empty-note" id="sheetsStatusText" style="padding:0;text-align:left;">ยังไม่ได้เชื่อมต่อ — ข้อมูลจะถูกเก็บในเบราว์เซอร์นี้เท่านั้น (localStorage)</div>
+      </div>
+    </div>
+  </div>
 
   <section class="month-nav">
     <button class="icon-btn" id="prevMonth">‹</button>
@@ -113,6 +123,25 @@
         <input type="file" id="importFileInput" accept=".json" style="display:none;">
       </label>
       <button class="btn primary" id="confirmImportBtn">นำเข้า</button>
+    </div>
+  </div>
+</div>
+
+<!-- Google Sheets Settings Modal -->
+<div class="modal-backdrop" id="sheetsModalBackdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <span>ตั้งค่า Google Sheets</span>
+      <button class="icon-btn" id="closeSheetsModalBtn">✕</button>
+    </div>
+    <p class="modal-note">วาง "Web app URL" ที่ได้จากการ deploy Google Apps Script (ดูวิธีทำใน README.md โฟลเดอร์ google-apps-script) เมื่อเชื่อมต่อสำเร็จ รายการทั้งหมดจะอ่าน/เขียนจาก Google Sheet ของคุณโดยตรง แทนที่จะเก็บแค่ในเบราว์เซอร์นี้</p>
+    <div class="form-row">
+      <label>Web app URL</label>
+      <input type="text" id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="disconnectSheetsBtn">เลิกเชื่อมต่อ</button>
+      <button class="btn primary" id="connectSheetsBtn">ทดสอบและเชื่อมต่อ</button>
     </div>
   </div>
 </div>
