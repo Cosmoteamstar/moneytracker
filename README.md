@@ -1,60 +1,39 @@
-# รายรับ-รายจ่าย Tracker
+# Money Tracker
 
-เว็บ static ธรรมดา (HTML/CSS/JS ล้วน ไม่มี build step) สำหรับติดตามรายรับ-รายจ่ายรายวัน
-ข้อมูลเก็บไว้ใน `localStorage` ของเบราว์เซอร์ผู้ใช้แต่ละคน (ไม่มี backend/database)
+เว็บแอป static สำหรับจดรายรับรายจ่ายและวางแผนงบประมาณ ใช้ HTML/CSS/JavaScript ล้วน ไม่มี build step
 
-## ฟีเจอร์
-- เพิ่ม/แก้ไข/ลบ รายการรายรับ-รายจ่าย พร้อมหมวดหมู่ วันที่ และโน้ต
-- สรุปยอดรายรับ/รายจ่าย/คงเหลือ รายเดือน พร้อมปุ่มเลื่อนเดือนก่อนหน้า-ถัดไป
-- กราฟโดนัทสัดส่วนรายจ่ายตามหมวดหมู่ (เดือนปัจจุบัน)
-- กราฟแท่งเปรียบเทียบรายรับ-รายจ่าย 6 เดือนล่าสุด
-- Export ข้อมูลเป็นไฟล์ JSON สำรอง
-- Import งบตั้งต้นจากไฟล์ JSON ที่ export มาจากแดชบอร์ดงบประมาณ (Claude artifact) เพื่อสร้างรายการเริ่มต้นให้อัตโนมัติ
+## หน้าเว็บ
 
-## วิธี Deploy ขึ้น Vercel
+- `index.html` - หน้าจดรายรับรายจ่ายรายวัน พร้อมกราฟและการเชื่อมต่อ Google Sheets
+- `finance-tracker.html` - หน้าแผนงบประมาณ เงินเดือน รายจ่ายประจำ เงินเก็บ และเงินเหลือใช้ต่อวัน ใช้ Google Sheets URL เดียวกับหน้ารายการ
+- `finance-tracker (1).html` - ทางลัด redirect ไป `finance-tracker.html`
+- `Code.gs` - Google Apps Script backend สำหรับอ่าน/เขียนรายการลง Google Sheet
 
-### วิธีที่ 1: ใช้ Vercel CLI (เร็วที่สุด)
-```bash
-npm install -g vercel   # ติดตั้งครั้งเดียว ถ้ายังไม่มี
-cd finance-tracker-app
-vercel                  # ตอบคำถามตามค่า default ได้เลย ไม่ต้องตั้งค่า build
-```
-Vercel จะตรวจพบว่าเป็น static site อัตโนมัติ (ไม่ต้องมี build command หรือ output directory)
+## ใช้งาน
 
-### วิธีที่ 2: ผ่านเว็บ Vercel
-1. อัปโหลด folder นี้ขึ้น GitHub repo (หรือ push ตรงๆ)
-2. ไปที่ https://vercel.com/new แล้วเลือก "Import Project"
-3. เลือก repo นี้ แล้วกด Deploy (ไม่ต้องตั้งค่าอะไรเพิ่ม)
+เปิด `index.html` หรือ `finance-tracker.html` ใน browser ได้เลย ทั้งสองหน้ามีปุ่มสลับหน้าอยู่ด้านบน
 
-### วิธีที่ 3: Drag & Drop
-ลาก folder `finance-tracker-app` เข้าไปที่หน้า https://vercel.com/new โดยตรง
+ถ้ายังไม่เชื่อม Google Sheets ข้อมูลจะถูกเก็บไว้ใน `localStorage` ของ browser นั้นก่อน หลังเชื่อมต่อแล้ว:
 
-## เชื่อมต่อกับ Google Sheets (ฟรี ไม่ต้องมี database)
+- รายการรายรับรายจ่ายจะอยู่ในชีต `Transactions`
+- แผนงบประมาณจะอยู่ในชีต `BudgetProfile`
 
-โฟลเดอร์ `google-apps-script/Code.gs` คือ backend ฟรีที่ทำให้ Google Sheet ทำหน้าที่เป็นฐานข้อมูลของแอปนี้ วิธีตั้งค่า:
+## ตั้งค่า Google Sheets
 
-1. สร้าง Google Sheet ใหม่ที่ https://sheets.google.com
-2. เมนู **Extensions > Apps Script**
-3. ลบโค้ดตั้งต้นทั้งหมด แล้ววางเนื้อหาจาก `google-apps-script/Code.gs` ลงไปแทน
-4. กด **Deploy > New deployment**
-   - Select type: **Web app**
-   - Execute as: **Me**
-   - Who has access: **Anyone**
-5. กด Deploy แล้วอนุญาตสิทธิ์ที่ Google ถามไป
-6. คัดลอก **Web app URL** ที่ได้ (จะลงท้ายด้วย `/exec`)
-7. เปิดเว็บ tracker → กดปุ่ม **"ตั้งค่า Google Sheets"** ที่หัวเว็บ → วาง URL → กด **"ทดสอบและเชื่อมต่อ"**
+1. สร้าง Google Sheet ใหม่
+2. ไปที่ `Extensions > Apps Script`
+3. ลบโค้ดตั้งต้น แล้ววางเนื้อหาใน `Code.gs`
+4. กด `Deploy > New deployment`
+5. เลือกชนิด `Web app`
+6. ตั้งค่า `Execute as: Me`
+7. ตั้งค่า `Who has access: Anyone`
+8. Deploy และอนุญาตสิทธิ์
+9. คัดลอก Web app URL ที่ลงท้ายด้วย `/exec`
+10. เปิด `index.html` แล้วกด `Google Sheets`
+11. วาง URL และกด `ทดสอบและเชื่อมต่อ`
 
-หลังจากเชื่อมต่อสำเร็จ ทุกรายการที่เพิ่ม/แก้ไข/ลบในเว็บจะไปอัปเดตที่ Google Sheet โดยตรง และคุณสามารถเปิด Sheet มาพิมพ์แถวข้อมูลเพิ่มเองได้เลย (แอปจะดึงข้อมูลล่าสุดมาแสดงทุกครั้งที่เปิดหรือเชื่อมต่อใหม่)
+หลังเชื่อมต่อสำเร็จ รายการที่เพิ่ม แก้ไข หรือลบใน `index.html` จะอัปเดต Google Sheet โดยตรง และหน้า `finance-tracker.html` จะใช้ URL เดียวกันเพื่อโหลด/บันทึกแผนงบ
 
-**ข้อควรรู้:**
-- ทุกครั้งที่แก้โค้ดใน Apps Script ต้องสร้าง deployment เวอร์ชันใหม่ (Deploy > Manage deployments > แก้ไข > New version) ไม่งั้น URL เดิมจะยังใช้โค้ดเก่าอยู่
-- "Who has access: Anyone" หมายถึงใครก็เรียก URL นี้ได้ถ้ารู้ลิงก์ (ไม่ได้แปลว่า public บน Google) ควรเก็บลิงก์นี้เป็นความลับเหมือนรหัสผ่าน
-- ถ้าไม่เชื่อมต่อ Google Sheets เว็บจะยังทำงานได้ปกติโดยเก็บข้อมูลใน `localStorage` ของเบราว์เซอร์แทน
+## หมายเหตุ
 
-## หมายเหตุเรื่องข้อมูล
-เนื่องจากข้อมูลเก็บใน `localStorage` ของเบราว์เซอร์:
-- ข้อมูลจะอยู่เฉพาะในเบราว์เซอร์/อุปกรณ์ที่ใช้บันทึก ไม่ sync ข้ามอุปกรณ์
-- ควรกด "ส่งออกข้อมูล" เป็นระยะเพื่อสำรองไฟล์ JSON ไว้
-- ถ้าล้าง cache/localStorage ของเบราว์เซอร์ ข้อมูลจะหายไป
-
-หากต้องการให้ข้อมูล sync ข้ามอุปกรณ์ในอนาคต จะต้องเพิ่มฐานข้อมูลจริง (เช่น Vercel Postgres, Supabase) ซึ่งเป็นขั้นถัดไปที่ทำเพิ่มได้
+ถ้าแก้ไข `Code.gs` ในภายหลัง ต้องสร้าง deployment version ใหม่ใน Google Apps Script ไม่อย่างนั้น URL เดิมจะยังใช้โค้ดเวอร์ชันเก่า

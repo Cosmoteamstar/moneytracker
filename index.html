@@ -2,50 +2,56 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>รายรับ-รายจ่าย</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Money Tracker</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="app">
-  <header class="topbar">
+  <header class="app-header">
     <div>
-      <h1>รายรับ-รายจ่าย</h1>
-      <p class="sub">บันทึกและติดตามการเงินรายวัน</p>
+      <p class="eyebrow">Money Tracker</p>
+      <h1>รายรับรายจ่าย</h1>
+      <p class="sub">บันทึกรายการประจำวันและซิงก์กับ Google Sheets</p>
     </div>
-    <div class="topbar-actions">
-      <button class="btn ghost" id="sheetsSettingsBtn">ตั้งค่า Google Sheets</button>
-      <button class="btn ghost" id="importBtn">นำเข้างบตั้งต้น</button>
-      <button class="btn ghost" id="exportBtn">ส่งออกข้อมูล</button>
-    </div>
+    <nav class="page-switch" aria-label="สลับหน้า">
+      <a class="switch-link active" href="index.html">รายการ</a>
+      <a class="switch-link" href="finance-tracker.html">แผนงบ</a>
+    </nav>
   </header>
 
-  <div class="card" id="sheetsStatusCard" style="display:none;">
-    <div class="flex-between">
-      <div>
-        <div class="label" style="margin-bottom:2px;">Google Sheets</div>
-        <div class="empty-note" id="sheetsStatusText" style="padding:0;text-align:left;">ยังไม่ได้เชื่อมต่อ — ข้อมูลจะถูกเก็บในเบราว์เซอร์นี้เท่านั้น (localStorage)</div>
-      </div>
+  <section class="quick-actions">
+    <button class="btn primary" id="openAddBtn">+ เพิ่มรายการ</button>
+    <button class="btn ghost" id="sheetsSettingsBtn">Google Sheets</button>
+    <button class="btn ghost" id="importBtn">นำเข้า</button>
+    <button class="btn ghost" id="exportBtn">ส่งออก</button>
+  </section>
+
+  <section class="status-card" id="sheetsStatusCard" style="display:none;">
+    <div class="status-dot" aria-hidden="true"></div>
+    <div>
+      <div class="status-title">สถานะข้อมูล</div>
+      <div class="status-text" id="sheetsStatusText">ยังไม่ได้เชื่อมต่อ ข้อมูลจะถูกเก็บไว้ในเครื่องนี้</div>
     </div>
-  </div>
+  </section>
 
   <section class="month-nav">
-    <button class="icon-btn" id="prevMonth">‹</button>
+    <button class="icon-btn" id="prevMonth" aria-label="เดือนก่อนหน้า">‹</button>
     <div class="month-label" id="monthLabel">กรกฎาคม 2026</div>
-    <button class="icon-btn" id="nextMonth">›</button>
+    <button class="icon-btn" id="nextMonth" aria-label="เดือนถัดไป">›</button>
   </section>
 
   <section class="summary-grid">
-    <div class="card summary-card">
-      <div class="label">รายรับเดือนนี้</div>
+    <div class="card summary-card income-card">
+      <div class="label">รายรับ</div>
       <div class="hero num income" id="sumIncome">฿0</div>
     </div>
-    <div class="card summary-card">
-      <div class="label">รายจ่ายเดือนนี้</div>
+    <div class="card summary-card expense-card">
+      <div class="label">รายจ่าย</div>
       <div class="hero num expense" id="sumExpense">฿0</div>
     </div>
-    <div class="card summary-card">
+    <div class="card summary-card balance-card">
       <div class="label">คงเหลือ</div>
       <div class="hero num" id="sumBalance">฿0</div>
     </div>
@@ -53,70 +59,83 @@
 
   <section class="charts-grid">
     <div class="card">
-      <div class="label">สัดส่วนรายจ่ายตามหมวดหมู่</div>
+      <div class="section-head">
+        <div>
+          <div class="label">หมวดรายจ่าย</div>
+          <h2>ใช้เงินกับอะไรบ้าง</h2>
+        </div>
+      </div>
       <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
       <div id="categoryEmpty" class="empty-note" style="display:none;">ยังไม่มีรายจ่ายในเดือนนี้</div>
     </div>
     <div class="card">
-      <div class="label">แนวโน้ม 6 เดือนล่าสุด</div>
+      <div class="section-head">
+        <div>
+          <div class="label">แนวโน้ม</div>
+          <h2>6 เดือนล่าสุด</h2>
+        </div>
+      </div>
       <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
     </div>
   </section>
 
   <section class="card">
-    <div class="flex-between">
-      <div class="label" style="margin-bottom:0;">รายการทั้งหมด</div>
-      <button class="btn primary" id="openAddBtn">+ เพิ่มรายการ</button>
+    <div class="section-head">
+      <div>
+        <div class="label">รายการทั้งหมด</div>
+        <h2>ประจำเดือนนี้</h2>
+      </div>
+      <button class="btn compact primary desktop-only" id="openAddBtnDesktop">+ เพิ่ม</button>
     </div>
     <div id="txList" class="tx-list"></div>
-    <div id="txEmpty" class="empty-note" style="display:none;">ยังไม่มีรายการในเดือนนี้ กด "+ เพิ่มรายการ" เพื่อเริ่มบันทึก</div>
+    <div id="txEmpty" class="empty-note" style="display:none;">ยังไม่มีรายการในเดือนนี้</div>
   </section>
 </div>
 
-<!-- Add/Edit Transaction Modal -->
+<button class="fab" id="mobileAddBtn" aria-label="เพิ่มรายการ">+</button>
+
 <div class="modal-backdrop" id="txModalBackdrop">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-header">
       <span id="modalTitle">เพิ่มรายการ</span>
-      <button class="icon-btn" id="closeModalBtn">✕</button>
+      <button class="icon-btn" id="closeModalBtn" aria-label="ปิด">×</button>
     </div>
     <div class="type-toggle">
       <button class="type-btn expense active" data-type="expense" id="typeExpenseBtn">รายจ่าย</button>
       <button class="type-btn income" data-type="income" id="typeIncomeBtn">รายรับ</button>
     </div>
     <div class="form-row">
-      <label>วันที่</label>
+      <label for="txDate">วันที่</label>
       <input type="date" id="txDate">
     </div>
     <div class="form-row">
-      <label>หมวดหมู่</label>
-      <input type="text" id="txCategory" list="categoryList" placeholder="เช่น ค่าห้อง, อาหาร">
+      <label for="txCategory">หมวดหมู่</label>
+      <input type="text" id="txCategory" list="categoryList" placeholder="เช่น อาหาร, ค่าเดินทาง">
       <datalist id="categoryList"></datalist>
     </div>
     <div class="form-row">
-      <label>จำนวนเงิน</label>
+      <label for="txAmount">จำนวนเงิน</label>
       <input type="text" inputmode="decimal" id="txAmount" placeholder="0">
     </div>
     <div class="form-row">
-      <label>โน้ต (ถ้ามี)</label>
+      <label for="txNote">โน้ต</label>
       <input type="text" id="txNote" placeholder="รายละเอียดเพิ่มเติม">
     </div>
     <div class="modal-actions">
-      <button class="btn ghost" id="deleteTxBtn" style="display:none;">ลบรายการ</button>
+      <button class="btn ghost" id="deleteTxBtn" style="display:none;">ลบ</button>
       <button class="btn primary" id="saveTxBtn">บันทึก</button>
     </div>
   </div>
 </div>
 
-<!-- Import Modal -->
 <div class="modal-backdrop" id="importModalBackdrop">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-header">
-      <span>นำเข้างบตั้งต้น</span>
-      <button class="icon-btn" id="closeImportBtn">✕</button>
+      <span>นำเข้าข้อมูล</span>
+      <button class="icon-btn" id="closeImportBtn" aria-label="ปิด">×</button>
     </div>
-    <p class="modal-note">วางไฟล์ JSON ที่ export มาจากแดชบอร์ดงบประมาณ (ปุ่ม "ส่งออกข้อมูลตั้งต้น") ระบบจะสร้างรายการรายรับ-รายจ่ายของเดือนปัจจุบันให้อัตโนมัติ</p>
-    <textarea id="importTextarea" rows="6" placeholder="วางเนื้อหา JSON ที่นี่..."></textarea>
+    <p class="modal-note">วาง JSON ที่ส่งออกจากหน้าแผนงบหรือไฟล์รายการเดิม ระบบจะสร้างรายการในเดือนที่เปิดอยู่ให้</p>
+    <textarea id="importTextarea" rows="6" placeholder="วาง JSON ที่นี่..."></textarea>
     <div class="modal-actions">
       <label class="btn ghost file-btn">
         เลือกไฟล์
@@ -127,16 +146,15 @@
   </div>
 </div>
 
-<!-- Google Sheets Settings Modal -->
 <div class="modal-backdrop" id="sheetsModalBackdrop">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-header">
       <span>ตั้งค่า Google Sheets</span>
-      <button class="icon-btn" id="closeSheetsModalBtn">✕</button>
+      <button class="icon-btn" id="closeSheetsModalBtn" aria-label="ปิด">×</button>
     </div>
-    <p class="modal-note">วาง "Web app URL" ที่ได้จากการ deploy Google Apps Script (ดูวิธีทำใน README.md โฟลเดอร์ google-apps-script) เมื่อเชื่อมต่อสำเร็จ รายการทั้งหมดจะอ่าน/เขียนจาก Google Sheet ของคุณโดยตรง แทนที่จะเก็บแค่ในเบราว์เซอร์นี้</p>
+    <p class="modal-note">วาง Web app URL จาก Google Apps Script เมื่อเชื่อมต่อแล้ว รายการจะอ่านและบันทึกลง Google Sheet โดยตรง</p>
     <div class="form-row">
-      <label>Web app URL</label>
+      <label for="sheetsUrlInput">Web app URL</label>
       <input type="text" id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
     </div>
     <div class="modal-actions">

@@ -4,8 +4,8 @@
   const STORAGE_KEY = 'ft_transactions_v1';
   const SHEETS_URL_KEY = 'ft_sheets_url';
   const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-  const EXPENSE_CATEGORIES = ['ค่าห้อง','ค่าน้ำ','ค่าไฟ','เน็ตบ้าน','เน็ตโทรศัพท์','ให้ย่า','BTS','รถตู้','ประกันสังคม','Shopping','น้ำยาซักผ้า','อาหาร','อื่นๆ'];
-  const INCOME_CATEGORIES = ['เงินเดือน','รายได้เสริม','โบนัส','อื่นๆ'];
+  const EXPENSE_CATEGORIES = ['ค่าห้อง','ค่าน้ำ','ค่าไฟ','เน็ตบ้าน','เน็ตโทรศัพท์','ให้ย่า','BTS','รถตู้','ประกันสังคม','Shopping','น้ำยาซักผ้า','อาหาร','กาแฟ','เดินทาง','สุขภาพ','ของใช้','อื่นๆ'];
+  const INCOME_CATEGORIES = ['เงินเดือน','รายได้เสริม','โบนัส','คืนเงิน','อื่นๆ'];
 
   let transactions = [];
   let currentMonth = new Date().getMonth();
@@ -17,16 +17,15 @@
   let sheetsUrl = '';
 
   function uid(){ return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
-  function fmt(n){ n = Math.round(Number(n)||0); return n.toLocaleString('en-US'); }
+  function fmt(n){ return Math.round(Number(n)||0).toLocaleString('en-US'); }
   function todayISO(){ return new Date().toISOString().slice(0,10); }
-
-  function isSheetsConnected(){ return !!sheetsUrl; }
+  function isSheetsConnected(){ return Boolean(sheetsUrl); }
 
   async function sheetsRequest(action, params){
     const url = new URL(sheetsUrl);
     url.searchParams.set('action', action);
-    Object.keys(params||{}).forEach(k=>{
-      if(params[k] !== undefined && params[k] !== null) url.searchParams.set(k, params[k]);
+    Object.keys(params||{}).forEach(key=>{
+      if(params[key] !== undefined && params[key] !== null) url.searchParams.set(key, params[key]);
     });
     const res = await fetch(url.toString());
     if(!res.ok) throw new Error('network_error');
@@ -36,22 +35,23 @@
   function updateSheetsStatusUI(message){
     const card = document.getElementById('sheetsStatusCard');
     const text = document.getElementById('sheetsStatusText');
-    card.style.display = 'block';
-    if(isSheetsConnected()){
-      text.textContent = message || 'เชื่อมต่อ Google Sheets แล้ว ข้อมูลจะบันทึกลง Sheet โดยตรง';
-    } else {
-      text.textContent = 'ยังไม่ได้เชื่อมต่อ — ข้อมูลจะถูกเก็บในเบราว์เซอร์นี้เท่านั้น (localStorage)';
-    }
+    card.style.display = 'flex';
+    card.classList.toggle('connected', isSheetsConnected());
+    text.textContent = message || (isSheetsConnected()
+      ? 'เชื่อมต่อ Google Sheets แล้ว รายการใหม่และรายการที่แก้ไขจะถูกบันทึกลง Sheet'
+      : 'ยังไม่ได้เชื่อมต่อ Google Sheets ข้อมูลจะถูกเก็บไว้ใน browser นี้ก่อน');
   }
 
   function loadTransactions(){
     try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      transactions = raw ? JSON.parse(raw) : [];
-    }catch(e){ transactions = []; }
+      transactions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    }catch(e){
+      transactions = [];
+    }
   }
+
   function saveTransactions(){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions)); }catch(e){}
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
   }
 
   async function refreshFromSheetsIfConnected(){
@@ -63,13 +63,13 @@
         saveTransactions();
       }
     }catch(e){
-      updateSheetsStatusUI('เชื่อมต่อ Google Sheets ไม่สำเร็จ ใช้ข้อมูลที่บันทึกไว้ในเบราว์เซอร์แทน');
+      updateSheetsStatusUI('เชื่อมต่อ Google Sheets ไม่สำเร็จ ตอนนี้แสดงข้อมูลที่เคยบันทึกไว้ใน browser');
     }
   }
 
   function monthTransactions(){
-    return transactions.filter(t=>{
-      const d = new Date(t.date);
+    return transactions.filter(item=>{
+      const d = new Date(item.date);
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     }).sort((a,b)=> new Date(b.date) - new Date(a.date));
   }
@@ -79,11 +79,15 @@
   }
 
   function renderSummary(list){
-    const income = list.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount||0),0);
-    const expense = list.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount||0),0);
+    const income = list.filter(t=>t.type==='income').reduce((sum,t)=>sum+Number(t.amount||0),0);
+    const expense = list.filter(t=>t.type==='expense').reduce((sum,t)=>sum+Number(t.amount||0),0);
+    const balance = income - expense;
+    const balanceEl = document.getElementById('sumBalance');
     document.getElementById('sumIncome').textContent = '฿' + fmt(income);
     document.getElementById('sumExpense').textContent = '฿' + fmt(expense);
-    document.getElementById('sumBalance').textContent = '฿' + fmt(income - expense);
+    balanceEl.textContent = '฿' + fmt(balance);
+    balanceEl.classList.toggle('expense', balance < 0);
+    balanceEl.classList.toggle('income', balance >= 0);
   }
 
   function renderTxList(list){
@@ -97,33 +101,34 @@
     emptyNote.style.display = 'none';
 
     const groups = {};
-    list.forEach(t=>{
-      if(!groups[t.date]) groups[t.date] = [];
-      groups[t.date].push(t);
+    list.forEach(item=>{
+      if(!groups[item.date]) groups[item.date] = [];
+      groups[item.date].push(item);
     });
 
     Object.keys(groups).sort((a,b)=> new Date(b)-new Date(a)).forEach(date=>{
-      const dayLabel = document.createElement('div');
-      dayLabel.className = 'tx-day-label';
+      const label = document.createElement('div');
+      label.className = 'tx-day-label';
       const d = new Date(date);
-      dayLabel.textContent = d.getDate() + ' ' + THAI_MONTHS[d.getMonth()];
-      container.appendChild(dayLabel);
+      label.textContent = d.getDate() + ' ' + THAI_MONTHS[d.getMonth()];
+      container.appendChild(label);
 
-      groups[date].forEach(t=>{
-        const row = document.createElement('div');
+      groups[date].forEach(item=>{
+        const row = document.createElement('button');
+        row.type = 'button';
         row.className = 'tx-row';
-        row.dataset.id = t.id;
+        row.dataset.id = item.id;
         row.innerHTML = `
           <div class="tx-left">
-            <span class="tx-dot ${t.type}"></span>
+            <span class="tx-dot ${item.type}"></span>
             <div class="tx-info">
-              <div class="tx-category">${escapeHtml(t.category || 'ไม่ระบุหมวดหมู่')}</div>
-              ${t.note ? `<div class="tx-note">${escapeHtml(t.note)}</div>` : ''}
+              <div class="tx-category">${escapeHtml(item.category || 'ไม่ระบุหมวดหมู่')}</div>
+              ${item.note ? `<div class="tx-note">${escapeHtml(item.note)}</div>` : ''}
             </div>
           </div>
-          <div class="tx-amount num ${t.type}">${t.type==='income'?'+':'-'}฿${fmt(t.amount)}</div>
+          <div class="tx-amount num ${item.type}">${item.type==='income'?'+':'-'}฿${fmt(item.amount)}</div>
         `;
-        row.addEventListener('click', ()=> openEditModal(t.id));
+        row.addEventListener('click', ()=> openEditModal(item.id));
         container.appendChild(row);
       });
     });
@@ -149,26 +154,26 @@
     canvas.style.display = 'block';
 
     const byCategory = {};
-    expenses.forEach(t=>{
-      const cat = t.category || 'อื่นๆ';
-      byCategory[cat] = (byCategory[cat]||0) + Number(t.amount||0);
+    expenses.forEach(item=>{
+      const cat = item.category || 'อื่นๆ';
+      byCategory[cat] = (byCategory[cat] || 0) + Number(item.amount || 0);
     });
-    const labels = Object.keys(byCategory);
-    const data = Object.values(byCategory);
-    const palette = ['#0071E3','#FF9500','#2FA84F','#FF3B30','#8E5AE2','#00B8B0','#C7511F','#5E5CE6','#B5495B','#6E6E73'];
 
     if(categoryChart) categoryChart.destroy();
     categoryChart = new Chart(canvas.getContext('2d'), {
       type: 'doughnut',
       data:{
-        labels: labels,
-        datasets:[{ data: data, backgroundColor: palette, borderWidth:0 }]
+        labels: Object.keys(byCategory),
+        datasets:[{
+          data: Object.values(byCategory),
+          backgroundColor: ['#0071E3','#FF9500','#34C759','#FF3B30','#AF52DE','#00C7BE','#5856D6','#A2845E','#6E6E73'],
+          borderWidth: 0
+        }]
       },
       options:{
         maintainAspectRatio:false,
-        plugins:{
-          legend:{ position:'bottom', labels:{ boxWidth:10, font:{size:11} } }
-        }
+        cutout:'68%',
+        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, padding:14, font:{size:11} } } }
       }
     });
   }
@@ -181,13 +186,13 @@
       const d = new Date(currentYear, currentMonth - i, 1);
       const monthIdx = d.getMonth();
       const yearIdx = d.getFullYear();
-      labels.push(THAI_MONTHS[monthIdx].slice(0,3) + ' ' + String(yearIdx).slice(2));
-      const list = transactions.filter(t=>{
-        const td = new Date(t.date);
+      labels.push(THAI_MONTHS[monthIdx].slice(0,3));
+      const list = transactions.filter(item=>{
+        const td = new Date(item.date);
         return td.getMonth() === monthIdx && td.getFullYear() === yearIdx;
       });
-      incomeData.push(list.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount||0),0));
-      expenseData.push(list.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount||0),0));
+      incomeData.push(list.filter(t=>t.type==='income').reduce((sum,t)=>sum+Number(t.amount||0),0));
+      expenseData.push(list.filter(t=>t.type==='expense').reduce((sum,t)=>sum+Number(t.amount||0),0));
     }
 
     const canvas = document.getElementById('trendChart');
@@ -195,16 +200,19 @@
     trendChart = new Chart(canvas.getContext('2d'), {
       type:'bar',
       data:{
-        labels: labels,
+        labels,
         datasets:[
-          { label:'รายรับ', data: incomeData, backgroundColor:'#2FA84F' },
-          { label:'รายจ่าย', data: expenseData, backgroundColor:'#FF3B30' }
+          { label:'รายรับ', data: incomeData, backgroundColor:'#34C759', borderRadius:8 },
+          { label:'รายจ่าย', data: expenseData, backgroundColor:'#FF3B30', borderRadius:8 }
         ]
       },
       options:{
         maintainAspectRatio:false,
-        scales:{ y:{ beginAtZero:true, ticks:{ font:{size:10} } }, x:{ ticks:{ font:{size:10} } } },
-        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{size:11} } } }
+        scales:{
+          y:{ beginAtZero:true, grid:{ color:'#ECECF0' }, ticks:{ font:{size:10} } },
+          x:{ grid:{ display:false }, ticks:{ font:{size:10} } }
+        },
+        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, padding:14, font:{size:11} } } }
       }
     });
   }
@@ -222,10 +230,9 @@
   function populateCategoryList(){
     const datalist = document.getElementById('categoryList');
     const cats = currentType === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
-    datalist.innerHTML = cats.map(c=>`<option value="${c}"></option>`).join('');
+    datalist.innerHTML = cats.map(cat=>`<option value="${cat}"></option>`).join('');
   }
 
-  // Modal handling
   function openAddModal(){
     editingId = null;
     currentType = 'expense';
@@ -237,20 +244,21 @@
     document.getElementById('deleteTxBtn').style.display = 'none';
     setTypeUI('expense');
     document.getElementById('txModalBackdrop').classList.add('open');
+    setTimeout(()=>document.getElementById('txCategory').focus(), 80);
   }
 
   function openEditModal(id){
-    const t = transactions.find(x=>x.id===id);
-    if(!t) return;
+    const item = transactions.find(x=>x.id===id);
+    if(!item) return;
     editingId = id;
-    currentType = t.type;
+    currentType = item.type;
     document.getElementById('modalTitle').textContent = 'แก้ไขรายการ';
-    document.getElementById('txDate').value = t.date;
-    document.getElementById('txCategory').value = t.category;
-    document.getElementById('txAmount').value = t.amount;
-    document.getElementById('txNote').value = t.note || '';
-    document.getElementById('deleteTxBtn').style.display = 'inline-block';
-    setTypeUI(t.type);
+    document.getElementById('txDate').value = item.date;
+    document.getElementById('txCategory').value = item.category;
+    document.getElementById('txAmount').value = item.amount;
+    document.getElementById('txNote').value = item.note || '';
+    document.getElementById('deleteTxBtn').style.display = 'inline-flex';
+    setTypeUI(item.type);
     document.getElementById('txModalBackdrop').classList.add('open');
   }
 
@@ -278,21 +286,18 @@
 
     try{
       if(editingId){
-        const t = transactions.find(x=>x.id===editingId);
-        if(t){ t.date=date; t.category=category; t.amount=amount; t.note=note; t.type=currentType; }
-        if(isSheetsConnected()){
-          await sheetsRequest('update', {id: editingId, type: currentType, date, category, amount, note});
-        }
+        const item = transactions.find(x=>x.id===editingId);
+        if(item){ item.date=date; item.category=category; item.amount=amount; item.note=note; item.type=currentType; }
+        if(isSheetsConnected()) await sheetsRequest('update', {id: editingId, type: currentType, date, category, amount, note});
       } else {
         const newTx = { id: uid(), type: currentType, date, category, amount, note };
         transactions.push(newTx);
-        if(isSheetsConnected()){
-          await sheetsRequest('add', newTx);
-        }
+        if(isSheetsConnected()) await sheetsRequest('add', newTx);
       }
       saveTransactions();
       closeModal();
       renderAll();
+      updateSheetsStatusUI(isSheetsConnected() ? 'บันทึกล่าสุดลง Google Sheets แล้ว' : undefined);
     }catch(e){
       alert('บันทึกไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ Google Sheets');
     }finally{
@@ -304,19 +309,17 @@
   async function deleteTx(){
     if(!editingId) return;
     try{
-      if(isSheetsConnected()){
-        await sheetsRequest('delete', {id: editingId});
-      }
+      if(isSheetsConnected()) await sheetsRequest('delete', {id: editingId});
       transactions = transactions.filter(t=>t.id!==editingId);
       saveTransactions();
       closeModal();
       renderAll();
+      updateSheetsStatusUI(isSheetsConnected() ? 'ลบรายการจาก Google Sheets แล้ว' : undefined);
     }catch(e){
       alert('ลบไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ Google Sheets');
     }
   }
 
-  // Import / Export
   function exportData(){
     const blob = new Blob([JSON.stringify(transactions, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -340,23 +343,22 @@
 
     if(data && Array.isArray(data.expenses)){
       if(data.income){
-        newRows.push({ id: uid(), type:'income', date: dateStr, category:'เงินเดือน', amount: Number(data.income)||0, note:'นำเข้าจากงบตั้งต้น' });
+        newRows.push({ id: uid(), type:'income', date: dateStr, category:'เงินเดือน', amount: Number(data.income)||0, note:'นำเข้าจากแผนงบ' });
       }
       data.expenses.forEach(e=>{
-        newRows.push({ id: uid(), type:'expense', date: dateStr, category: e.name || 'อื่นๆ', amount: Number(e.amount)||0, note:'นำเข้าจากงบตั้งต้น' });
+        newRows.push({ id: uid(), type:'expense', date: dateStr, category: e.name || 'อื่นๆ', amount: Number(e.amount)||0, note:'นำเข้าจากแผนงบ' });
       });
       if(data.monthlySaving){
-        newRows.push({ id: uid(), type:'expense', date: dateStr, category:'เงินเก็บ', amount: Number(data.monthlySaving)||0, note:'นำเข้าจากงบตั้งต้น' });
+        newRows.push({ id: uid(), type:'expense', date: dateStr, category:'เงินเก็บ', amount: Number(data.monthlySaving)||0, note:'นำเข้าจากแผนงบ' });
       }
-    }
-    else if(Array.isArray(data)){
-      data.forEach(t=>{
-        if(t && t.type && t.amount){
-          newRows.push({ id: uid(), type: t.type, date: t.date || dateStr, category: t.category || 'อื่นๆ', amount: Number(t.amount)||0, note: t.note || 'นำเข้า' });
+    } else if(Array.isArray(data)){
+      data.forEach(item=>{
+        if(item && item.type && item.amount){
+          newRows.push({ id: uid(), type: item.type, date: item.date || dateStr, category: item.category || 'อื่นๆ', amount: Number(item.amount)||0, note: item.note || 'นำเข้า' });
         }
       });
     } else {
-      alert('ไม่พบข้อมูลที่รู้จักในไฟล์นี้');
+      alert('ไม่พบข้อมูลที่ระบบรู้จักในไฟล์นี้');
       return;
     }
 
@@ -366,9 +368,7 @@
     try{
       transactions.push(...newRows);
       if(isSheetsConnected()){
-        for(const row of newRows){
-          await sheetsRequest('add', row);
-        }
+        for(const row of newRows) await sheetsRequest('add', row);
       }
       saveTransactions();
       renderAll();
@@ -386,38 +386,48 @@
     document.getElementById('importTextarea').value = '';
     document.getElementById('importModalBackdrop').classList.add('open');
   }
+
   function closeImportModal(){
     document.getElementById('importModalBackdrop').classList.remove('open');
   }
 
-  // Event bindings
-  document.getElementById('prevMonth').addEventListener('click', ()=>{
-    currentMonth--; if(currentMonth<0){ currentMonth=11; currentYear--; }
+  function bindClick(id, handler){
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('click', handler);
+  }
+
+  bindClick('prevMonth', ()=>{
+    currentMonth--;
+    if(currentMonth < 0){ currentMonth = 11; currentYear--; }
     renderAll();
   });
-  document.getElementById('nextMonth').addEventListener('click', ()=>{
-    currentMonth++; if(currentMonth>11){ currentMonth=0; currentYear++; }
+  bindClick('nextMonth', ()=>{
+    currentMonth++;
+    if(currentMonth > 11){ currentMonth = 0; currentYear++; }
     renderAll();
   });
 
-  document.getElementById('openAddBtn').addEventListener('click', openAddModal);
-  document.getElementById('closeModalBtn').addEventListener('click', closeModal);
-  document.getElementById('txModalBackdrop').addEventListener('click', (e)=>{ if(e.target.id==='txModalBackdrop') closeModal(); });
-  document.getElementById('saveTxBtn').addEventListener('click', saveTx);
-  document.getElementById('deleteTxBtn').addEventListener('click', deleteTx);
-  document.getElementById('typeExpenseBtn').addEventListener('click', ()=>setTypeUI('expense'));
-  document.getElementById('typeIncomeBtn').addEventListener('click', ()=>setTypeUI('income'));
+  bindClick('openAddBtn', openAddModal);
+  bindClick('openAddBtnDesktop', openAddModal);
+  bindClick('mobileAddBtn', openAddModal);
+  bindClick('closeModalBtn', closeModal);
+  bindClick('saveTxBtn', saveTx);
+  bindClick('deleteTxBtn', deleteTx);
+  bindClick('typeExpenseBtn', ()=>setTypeUI('expense'));
+  bindClick('typeIncomeBtn', ()=>setTypeUI('income'));
 
-  document.getElementById('exportBtn').addEventListener('click', exportData);
-  document.getElementById('importBtn').addEventListener('click', openImportModal);
-  document.getElementById('closeImportBtn').addEventListener('click', closeImportModal);
-  document.getElementById('importModalBackdrop').addEventListener('click', (e)=>{ if(e.target.id==='importModalBackdrop') closeImportModal(); });
-  document.getElementById('confirmImportBtn').addEventListener('click', ()=>{
+  document.getElementById('txModalBackdrop').addEventListener('click', e=>{ if(e.target.id==='txModalBackdrop') closeModal(); });
+
+  bindClick('exportBtn', exportData);
+  bindClick('importBtn', openImportModal);
+  bindClick('closeImportBtn', closeImportModal);
+  document.getElementById('importModalBackdrop').addEventListener('click', e=>{ if(e.target.id==='importModalBackdrop') closeImportModal(); });
+  bindClick('confirmImportBtn', ()=>{
     const text = document.getElementById('importTextarea').value.trim();
     if(!text){ alert('กรุณาวางข้อมูล JSON หรือเลือกไฟล์ก่อน'); return; }
     tryImportBudgetJSON(text);
   });
-  document.getElementById('importFileInput').addEventListener('change', (e)=>{
+  document.getElementById('importFileInput').addEventListener('change', e=>{
     const file = e.target.files[0];
     if(!file) return;
     const reader = new FileReader();
@@ -425,17 +435,15 @@
     reader.readAsText(file);
   });
 
-  document.getElementById('sheetsSettingsBtn').addEventListener('click', ()=>{
+  bindClick('sheetsSettingsBtn', ()=>{
     document.getElementById('sheetsUrlInput').value = sheetsUrl;
     document.getElementById('sheetsModalBackdrop').classList.add('open');
   });
-  document.getElementById('closeSheetsModalBtn').addEventListener('click', ()=>{
-    document.getElementById('sheetsModalBackdrop').classList.remove('open');
-  });
-  document.getElementById('sheetsModalBackdrop').addEventListener('click', (e)=>{
+  bindClick('closeSheetsModalBtn', ()=>document.getElementById('sheetsModalBackdrop').classList.remove('open'));
+  document.getElementById('sheetsModalBackdrop').addEventListener('click', e=>{
     if(e.target.id==='sheetsModalBackdrop') document.getElementById('sheetsModalBackdrop').classList.remove('open');
   });
-  document.getElementById('connectSheetsBtn').addEventListener('click', async ()=>{
+  bindClick('connectSheetsBtn', async ()=>{
     const url = document.getElementById('sheetsUrlInput').value.trim();
     if(!url){ alert('กรุณาวาง Web app URL ก่อน'); return; }
     const btn = document.getElementById('connectSheetsBtn');
@@ -445,24 +453,21 @@
     sheetsUrl = url;
     try{
       const res = await sheetsRequest('ping');
-      if(res && res.ok){
-        localStorage.setItem(SHEETS_URL_KEY, url);
-        await refreshFromSheetsIfConnected();
-        updateSheetsStatusUI('เชื่อมต่อ Google Sheets สำเร็จ');
-        document.getElementById('sheetsModalBackdrop').classList.remove('open');
-        renderAll();
-      } else {
-        throw new Error('bad_response');
-      }
+      if(!res || !res.ok) throw new Error('bad_response');
+      localStorage.setItem(SHEETS_URL_KEY, url);
+      await refreshFromSheetsIfConnected();
+      updateSheetsStatusUI('เชื่อมต่อ Google Sheets สำเร็จ');
+      document.getElementById('sheetsModalBackdrop').classList.remove('open');
+      renderAll();
     }catch(e){
       sheetsUrl = previousUrl;
-      alert('เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบ URL และการตั้งค่า deploy (Who has access: Anyone)');
+      alert('เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบ URL และตั้งค่า Deploy เป็น Anyone');
     }finally{
       btn.disabled = false;
       btn.textContent = 'ทดสอบและเชื่อมต่อ';
     }
   });
-  document.getElementById('disconnectSheetsBtn').addEventListener('click', ()=>{
+  bindClick('disconnectSheetsBtn', ()=>{
     sheetsUrl = '';
     localStorage.removeItem(SHEETS_URL_KEY);
     updateSheetsStatusUI();
